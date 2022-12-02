@@ -1,4 +1,4 @@
-# l = [1, 2, 3, 4, 'hello', ['test', 10], 'world', True] # создаю масив (список)
+# l = [1, 2, 3, 4, 'hello', ['test', 10], 'world', True] # создаю список
 
 # l2 = list('hello')
 # l3 = list((1, 2, 3, 4, ))
