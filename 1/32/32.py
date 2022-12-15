@@ -1,28 +1,77 @@
 from bs4 import BeautifulSoup
 import urllib.request
+from operator import itemgetter
 
-req = urllib.request.urlopen('https://www.ua-football.com/sport')
+req = urllib.request.urlopen('https://www.interfax.ru')
 html = req.read()
-
 soup = BeautifulSoup(html, 'html.parser')
-news = soup.find_all('li', class_='liga-news-item')
 
-results = []
+# Создаю массивы для дальнейшей записи в них данных с новостей
+newТews = []
+maiNews = []
 
-for item in news:
-    title = item.find('span', class_='fz-16 fw-500 d-block').get_text(strip=True)
-    desc = item.find('span', class_='name-dop fz-12').get_text(strip=True)
-    href = item.a.get('href')
-    results.append({
-        'title': title,
-        'desc': desc,
-        'href': href,
-    })    
+# Функция для записи главных новостей в массив maiNews
+def writeMainNews(soupHTML):
+    maiNewsSoup = soupHTML.find_all('div',class_='newsmain')
+    maiNewsSoupA = maiNewsSoup[0].find_all('a')
+    for item in maiNewsSoupA: 
+        title = item.find('h3').get_text()
+        href = item.get('href')
+        maiNews.append({
+            'title': title,
+            'href': href
+        })
+
+
+# Функция для записи новых новостей в массив newТews
+def writeNewNews(soupHTML):
+    grupNewsSoup = soupHTML.find_all('div',class_='timeline__group')
+    oneNewsSoup = soupHTML.find_all('div',class_='timeline__text')
+    imgNewsSoup = soupHTML.find_all('div',class_='timeline__photo')
+    grupNewsSoupDiv = []
     
-f = open('news.txt', 'w', encoding='utf-8')
-i = 1
-for item in results:
-    f.write(f'Новость № {i}\n\nНазвание:{item["title"]}\nОписание: {item["desc"]}\nСсылка: {item["href"]}\n\n*************************\n\n')
-    i += 1
+    # Достаю новости из групп
+    for item in grupNewsSoup:
+        divs = item.find_all('div')
+        for div in divs:
+           grupNewsSoupDiv.append(div)
+    
+    grupNewsSoupDiv = grupNewsSoupDiv + imgNewsSoup + oneNewsSoup 
+        
+        
+    for item in grupNewsSoupDiv: 
+        title = item.find('h3').get_text()
+        href = item.a.get('href')
+        number = item.get('data-vr-contentbox')[5:]
+        time = item.find('time').get_text()
+        newТews.append({
+            'title': title,
+            'href': href,
+            'time': time,
+            'number': number
+        })
 
-print(results, sep='\n')
+
+def writeNewsFile(new, main):
+    new.sort(key=itemgetter('number'))
+    new.reverse ()
+    file = open('news.txt', 'w', encoding='utf-8')
+    
+    numberMainNews = 1 
+    file.write('Главыне новости')
+    for news in main:
+        file.write(f'\n\n Новость № {numberMainNews}\n\n\tНазвание: {news["title"]} \n\tСсылка: {news["href"]}\n\n ********************************\n ')
+        numberMainNews += 1
+
+    numberNewNews = 1
+    file.write('\n\nНовые новости')
+    for item in new:
+        file.write(f'\n\n Новость № {numberNewNews}\n\nВремя: {item["time"]}  \n\tНазвание: {item["title"]} \n\tСсылка: {item["href"]}\n\n ********************************\n ')
+        numberNewNews += 1
+    
+    file.close()
+
+
+writeMainNews(soup)
+writeNewNews(soup)
+writeNewsFile(newТews, maiNews)
